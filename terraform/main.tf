@@ -223,7 +223,8 @@ export AWS_DEFAULT_REGION=us-east-2
 
 helm upgrade --install kdp . --namespace kdp \
     -f ${local_file.helm_vars.filename} \
-    -f ../helm_config/${var.environment}_values.yaml
+    -f ../helm_config/${var.environment}_values.yaml \
+    ${var.extra_helm_args}
 EOF
   }
 
@@ -280,4 +281,9 @@ variable "metastore_instance_class" {
 variable "allow_drop_table" {
   description = "Configures presto to allow drop, rename table and columns"
   default     = false
+}
+
+variable "extra_helm_args" {
+  description = "Helm options"
+  default     = ""
 }

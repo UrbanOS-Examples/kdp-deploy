@@ -23,7 +23,7 @@ node('infrastructure') {
         scos.doCheckoutStage()
 
         doStageIfDeployingToDev('Deploy to Dev') {
-            deployTo('dev', "--set presto.deploy.container.tag=${env.DEV_IMAGE_TAG} --set metastore.deploy.container.tag=${env.DEV_IMAGE_TAG} --recreate-pods")
+            deployTo('environment': 'dev', 'image_tag': env.DEV_IMAGE_TAG)
         }
 
         doStageIfMergedToMaster('Process Dev job') {
@@ -31,26 +31,22 @@ node('infrastructure') {
         }
 
         doStageIfMergedToMaster('Deploy to Staging') {
-            deployTo('staging')
+            deployTo('environment': 'staging')
             scos.applyAndPushGitHubTag('staging')
         }
 
         doStageIfRelease('Deploy to Production') {
-            deployTo('prod')
+            deployTo('environment': 'prod')
             scos.applyAndPushGitHubTag('prod')
         }
     }
 }
 
-def deployTo(environment, extraArgs = []) {
+def deployTo(parameters = [:]) {
     dir('terraform') {
-        def extraVars = [
-            'environment': environment
-        ]
-
-        def terraform = scos.terraform(environment)
+        def terraform = scos.terraform(parameters.environment)
         terraform.init()
-        terraform.plan(terraform.defaultVarFile, extraVars, extraArgs)
+        terraform.plan(terraform.defaultVarFile, parameters)
         terraform.apply()
     }
 }
