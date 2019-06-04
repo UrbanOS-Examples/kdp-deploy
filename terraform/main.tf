@@ -180,14 +180,8 @@ global:
   objectStore:
     bucketName: ${aws_s3_bucket.presto_hive_storage.bucket}
 metastore:
-  deploy:
-    container:
-      tag: ${var.image_tag}
   allowDropTable: ${var.allow_drop_table ? "true": "false"}
 presto:
-  deploy:
-    container:
-      tag: ${var.image_tag}
   ingress:
     hosts:
     - "presto.${data.terraform_remote_state.env_remote_state.internal_dns_zone_name}/*"
@@ -224,6 +218,8 @@ export AWS_DEFAULT_REGION=us-east-2
 helm upgrade --install kdp . --namespace kdp \
     -f ${local_file.helm_vars.filename} \
     -f ../helm_config/${var.environment}_values.yaml \
+    ${var.image_tag != "" ? "--set presto.deploy.container.tag=${var.image_tag}" : ""} \
+    ${var.image_tag != "" ? "--set metastore.deploy.container.tag=${var.image_tag}" : ""} \
     ${var.extra_helm_args}
 EOF
   }
