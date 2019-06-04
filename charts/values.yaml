@@ -19,8 +19,8 @@ presto:
   deploy:
     replicas: 1
     container:
-      image: smartcitiesdata/presto
-      tag: 0.9.11
+      image: 199837183662.dkr.ecr.us-east-2.amazonaws.com/scos/presto
+      tag: latest
       pullPolicy: IfNotPresent
       resources:
         limits:
@@ -54,8 +54,8 @@ metastore:
   deploy:
     replicas: 1
     container:
-      image: smartcitiesdata/metastore
-      tag: 0.9.11
+      image: 199837183662.dkr.ecr.us-east-2.amazonaws.com/scos/metastore
+      tag: latest
       pullPolicy: IfNotPresent
       resources:
         limits:
