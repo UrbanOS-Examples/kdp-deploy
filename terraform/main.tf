@@ -266,7 +266,7 @@ variable "state_bucket" {
 
 variable "image_tag" {
   description = "The tag to deploy the component images"
-  default     = "latest"
+  default     = ""
 }
 
 variable "environment" {
