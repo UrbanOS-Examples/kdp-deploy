@@ -19,7 +19,7 @@ presto:
   deploy:
     replicas: 1
     container:
-      image: smartcities/presto
+      image: smartcitiesdata/presto
       tag: development
       pullPolicy: IfNotPresent
       resources:
@@ -54,7 +54,7 @@ metastore:
   deploy:
     replicas: 1
     container:
-      image: smartcities/metastore
+      image: smartcitiesdata/metastore
       tag: development
       pullPolicy: IfNotPresent
       resources:
