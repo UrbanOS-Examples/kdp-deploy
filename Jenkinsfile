@@ -27,7 +27,7 @@ node('infrastructure') {
         }
 
         doStageIfMergedToMaster('Process Dev job') {
-            scos.devDeployTrigger('kdp')
+            scos.devDeployTrigger('presto')
         }
 
         doStageIfMergedToMaster('Deploy to Staging') {
