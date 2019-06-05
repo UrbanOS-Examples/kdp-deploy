@@ -20,7 +20,7 @@ presto:
     replicas: 1
     container:
       image: smartcitiesdata/presto
-      tag: development
+      tag: 0.9.12
       pullPolicy: Always
       resources:
         limits:
@@ -55,7 +55,7 @@ metastore:
     replicas: 1
     container:
       image: smartcitiesdata/metastore
-      tag: development
+      tag: 0.9.12
       pullPolicy: Always
       resources:
         limits:
