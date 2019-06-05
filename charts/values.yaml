@@ -21,7 +21,7 @@ presto:
     container:
       image: smartcitiesdata/presto
       tag: development
-      pullPolicy: IfNotPresent
+      pullPolicy: Always
       resources:
         limits:
           memory: 2Gi # look for environment specific values
@@ -56,7 +56,7 @@ metastore:
     container:
       image: smartcitiesdata/metastore
       tag: development
-      pullPolicy: IfNotPresent
+      pullPolicy: Always
       resources:
         limits:
           memory: 1.5Gi
