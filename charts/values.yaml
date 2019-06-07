@@ -47,6 +47,7 @@ metastore:
       g1:
         heapRegionSize: 32M
   allowDropTable: false
+  timeout: 1m
   service:
     type: ClusterIP
     port: 9083
