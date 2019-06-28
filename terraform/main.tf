@@ -211,8 +211,6 @@ resource "null_resource" "helm_deploy" {
     command = <<EOF
 set -ex
 
-cd ../charts
-
 export KUBECONFIG=${local_file.kubeconfig.filename}
 
 export AWS_DEFAULT_REGION=us-east-2
