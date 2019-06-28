@@ -44,9 +44,10 @@ node('infrastructure') {
 
 def deployTo(parameters = [:]) {
     dir('terraform') {
+        def versionVarFile = '../version.tfvars'
         def terraform = scos.terraform(parameters.environment)
         terraform.init()
-        terraform.plan(terraform.defaultVarFile, parameters)
+        terraform.plan(terraform.defaultVarFile, parameters, ["--var-file=${versionVarFile}"])
         terraform.apply()
     }
 }

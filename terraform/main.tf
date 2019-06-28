@@ -217,7 +217,12 @@ export KUBECONFIG=${local_file.kubeconfig.filename}
 
 export AWS_DEFAULT_REGION=us-east-2
 
-helm upgrade --install kdp . --namespace kdp \
+helm init --client-only
+helm repo add scdp https://smartcitiesdata.github.io/charts
+helm repo update
+helm upgrade --install kubernetes-data-platform scdp/kubernetes-data-platform
+    --version ${var.chart_version}
+    --namespace kdp \
     -f ${local_file.helm_vars.filename} \
     -f ../helm_config/${var.environment}_values.yaml \
     ${var.extra_helm_args}
@@ -229,6 +234,11 @@ EOF
     # ${uuid()} will always be different thus always executing above local-exec
     hack_that_always_forces_null_resources_to_execute = "${uuid()}"
   }
+}
+
+variable "chart_version" {
+  description = "Version of the Helm chart used to deploy the app"
+  default     = "1.0.0"
 }
 
 variable "is_internal" {
