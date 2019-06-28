@@ -218,8 +218,8 @@ export AWS_DEFAULT_REGION=us-east-2
 helm init --client-only
 helm repo add scdp https://smartcitiesdata.github.io/charts
 helm repo update
-helm upgrade --install kubernetes-data-platform scdp/kubernetes-data-platform
-    --version ${var.chart_version}
+helm upgrade --install kdp scdp/kubernetes-data-platform \
+    --version ${var.chart_version} \
     --namespace kdp \
     -f ${local_file.helm_vars.filename} \
     -f ../helm_config/${var.environment}_values.yaml \
