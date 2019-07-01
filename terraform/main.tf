@@ -179,12 +179,18 @@ global:
       kubernetes.io/ingress.class: alb
   objectStore:
     bucketName: ${aws_s3_bucket.presto_hive_storage.bucket}
+    accessKey: null
+    accessSecret: null
 metastore:
   deploy: ${var.image_tag != "" ? "{container: {tag: ${var.image_tag}}}" : "{}"}
   allowDropTable: ${var.allow_drop_table ? "true": "false"}
 presto:
+  workers: 2
   deploy: ${var.image_tag != "" ? "{container: {tag: ${var.image_tag}}}" : "{}"}
+  deployPrometheusExporter: true
+  useJmxExporter: true
   ingress:
+    enable: true
     hosts:
     - "presto.${data.terraform_remote_state.env_remote_state.internal_dns_zone_name}/*"
     annotations:
