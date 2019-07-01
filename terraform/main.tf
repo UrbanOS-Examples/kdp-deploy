@@ -32,7 +32,7 @@ resource "local_file" "kubeconfig" {
 }
 
 module "metastore_database" {
-  source = "git@github.com:SmartColumbusOS/scos-tf-rds?ref=1.0.0"
+  source = "git@github.com:SmartColumbusOS/scos-tf-rds?ref=1.0.1"
 
   prefix                   = "${var.environment}-metastore"
   name                     = "metastore"
