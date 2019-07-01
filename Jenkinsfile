@@ -46,7 +46,9 @@ def deployTo(parameters = [:]) {
     dir('terraform') {
         def versionVarFile = '../version.tfvars'
         def terraform = scos.terraform(parameters.environment)
-        terraform.init()
+        sshagent(["GitHub"]) {
+            terraform.init()
+        }
         terraform.plan(terraform.defaultVarFile, parameters, ["--var-file=${versionVarFile}"])
         terraform.apply()
     }

@@ -31,76 +31,20 @@ resource "local_file" "kubeconfig" {
   content  = "${data.terraform_remote_state.env_remote_state.eks_cluster_kubeconfig}"
 }
 
-resource "aws_kms_key" "metastore_key" {
-  description = "metastore database encryption key for ${terraform.workspace}"
+module "metastore_database" {
+  source = "git@github.com:SmartColumbusOS/scos-tf-rds?ref=1.0.0"
+
+  prefix                   = "${var.environment}-metastore"
+  name                     = "metastore"
+  type                     = "postgres"
+  attached_vpc_id          = "${data.terraform_remote_state.env_remote_state.vpc_id}"
+  attached_subnet_ids      = ["${data.terraform_remote_state.env_remote_state.private_subnets}"]
+  attached_security_groups = ["${data.terraform_remote_state.env_remote_state.chatter_sg_id}"]
+  instance_class           = "${var.metastore_instance_class}"
 }
 
-resource "aws_kms_alias" "metastore_key_alias" {
-  name_prefix   = "alias/hive"
-  target_key_id = "${aws_kms_key.metastore_key.key_id}"
-}
-
-resource "random_string" "metastore_password" {
-  length  = 40
-  special = false
-}
-
-resource "aws_secretsmanager_secret" "presto_metastore_password" {
-  name = "presto_metastore_database_password"
-}
-
-resource "aws_secretsmanager_secret_version" "presto_metastore_password_version" {
-  secret_id     = "${aws_secretsmanager_secret.presto_metastore_password.id}"
-  secret_string = "${aws_db_instance.metastore_database.password}"
-}
-
-resource "aws_db_subnet_group" "metastore_subnet_group" {
-  name        = "metastore database ${terraform.workspace} subnet group"
-  description = "DB Subnet Group"
-  subnet_ids  = ["${data.terraform_remote_state.env_remote_state.private_subnets}"]
-
-  tags {
-    Name = "Subnet Group for metastore database in Environment ${terraform.workspace} VPC"
-  }
-}
-
-resource "aws_security_group" "metastore_allow" {
-  name_prefix = "db_allow_vpc"
-  vpc_id      = "${data.terraform_remote_state.env_remote_state.vpc_id}"
-
-  tags {
-    Name = "Postgres Allow VPC"
-  }
-
-  ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = ["${data.terraform_remote_state.env_remote_state.chatter_sg_id}"] #TODO
-    description     = "Allow postgres traffic from main VPC (effectively EKS)"
-  }
-}
-
-resource "aws_db_instance" "metastore_database" {
-  identifier                 = "${terraform.workspace}-hive-metastore"
-  name                       = "metastore"
-  instance_class             = "${var.metastore_instance_class}"
-  vpc_security_group_ids     = ["${aws_security_group.metastore_allow.id}"]
-  db_subnet_group_name       = "${aws_db_subnet_group.metastore_subnet_group.name}"
-  engine                     = "postgres"
-  engine_version             = "10.6"
-  auto_minor_version_upgrade = false
-  allocated_storage          = 100                                                  # The allocated storage in gibibytes.
-  storage_type               = "gp2"
-  username                   = "metastore"
-  password                   = "${random_string.metastore_password.result}"
-  multi_az                   = true
-  backup_window              = "04:54-05:24"
-  backup_retention_period    = 7
-  storage_encrypted          = true
-  kms_key_id                 = "${aws_kms_key.metastore_key.arn}"
-  apply_immediately          = false
-  skip_final_snapshot        = false
+data "aws_secretsmanager_secret_version" "metastore_database_password" {
+  secret_id = "${module.metastore_database.password_secret_id}"
 }
 
 resource "aws_s3_bucket" "presto_hive_storage" {
@@ -200,11 +144,11 @@ presto:
 postgres:
   enable: false
   service:
-    externalAddress: ${aws_db_instance.metastore_database.address}
+    externalAddress: ${module.metastore_database.address}
   db:
-    name: ${aws_db_instance.metastore_database.name}
-    user: ${aws_db_instance.metastore_database.username}
-    password: ${aws_db_instance.metastore_database.password}
+    name: ${module.metastore_database.name}
+    user: ${module.metastore_database.username}
+    password: ${data.aws_secretsmanager_secret_version.metastore_database_password.secret_string}
 hive:
   enable: false
 minio:
