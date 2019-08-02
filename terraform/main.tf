@@ -128,6 +128,7 @@ global:
 metastore:
   deploy: ${var.image_tag != "" ? "{container: {tag: ${var.image_tag}}}" : "{}"}
   allowDropTable: ${var.allow_drop_table ? "true": "false"}
+  timeout: 360m
 presto:
   workers: 2
   deploy: ${var.image_tag != "" ? "{container: {tag: ${var.image_tag}}}" : "{}"}
