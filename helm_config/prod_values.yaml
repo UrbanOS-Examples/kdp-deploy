@@ -1,6 +1,11 @@
 presto:
+  query:
+    maxMemory: 5GB
+    maxMemoryPerNode: 2.5GB
+    maxTotalMemoryPerNode: 2.6GB
+    heapHeadroomPerNode: 0.75GB
   jvm:
-    maxHeapSize: 4096M
+    maxHeapSize: 5120M
   deploy:
     container:
       resources:
