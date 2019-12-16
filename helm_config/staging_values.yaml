@@ -11,9 +11,9 @@ presto:
       resources:
         limits:
           memory: 6Gi
-          cpu: 4
+          cpu: 3
         requests:
           memory: 6Gi
-          cpu: 4
+          cpu: 3
   task:
     writerCount: 4
