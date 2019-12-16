@@ -1,1 +1,1 @@
-chart_version = "1.2.0"
+chart_version = "1.2.1"
