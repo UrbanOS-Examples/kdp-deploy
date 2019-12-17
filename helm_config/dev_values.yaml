@@ -10,3 +10,5 @@ presto:
         requests:
           memory: 2Gi
           cpu: 1
+  task:
+    writerCount: 2
