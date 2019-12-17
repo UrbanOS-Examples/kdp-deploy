@@ -16,4 +16,4 @@ presto:
           memory: 6Gi
           cpu: 3
   task:
-    writerCount: 2
+    writerCount: 1
