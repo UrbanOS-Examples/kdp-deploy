@@ -64,6 +64,15 @@ resource "aws_s3_bucket" "presto_hive_storage" {
   }
 }
 
+resource "aws_s3_bucket_public_access_block" "presto_hive_storage_s3_access" {
+  bucket = "${aws_s3_bucket.presto_hive_storage.id}"
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 resource "aws_s3_bucket_policy" "presto_hive_storage" {
   bucket = "${aws_s3_bucket.presto_hive_storage.id}"
 
@@ -82,7 +91,12 @@ resource "aws_s3_bucket_policy" "presto_hive_storage" {
          "Action": [
             "s3:ListBucket"
          ],
-         "Resource": "${aws_s3_bucket.presto_hive_storage.arn}"
+         "Resource": "${aws_s3_bucket.presto_hive_storage.arn}",
+         "Condition": {
+          "Bool":
+            "aws:SecureTransport": "false"
+         }
+      },
       },
       {
          "Effect": "Allow",
@@ -98,7 +112,11 @@ resource "aws_s3_bucket_policy" "presto_hive_storage" {
             "s3:DeleteObject",
             "s3:DeleteObjectVersion"
          ],
-         "Resource": "${aws_s3_bucket.presto_hive_storage.arn}/*"
+         "Resource": "${aws_s3_bucket.presto_hive_storage.arn}/*",
+         "Condition": {
+          "Bool":
+            "aws:SecureTransport": "false"
+         }
       }
    ]
 }
