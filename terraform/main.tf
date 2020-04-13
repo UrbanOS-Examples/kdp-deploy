@@ -1,5 +1,5 @@
 provider "aws" {
-  version = "1.39"
+  version = "2.54"
   region  = "${var.os_region}"
 
   assume_role {
@@ -91,13 +91,8 @@ resource "aws_s3_bucket_policy" "presto_hive_storage" {
          "Action": [
             "s3:ListBucket"
          ],
-         "Resource": "${aws_s3_bucket.presto_hive_storage.arn}",
-         "Condition": {
-          "Bool":
-            "aws:SecureTransport": "false"
-         }
-      },
-      },
+         "Resource": "${aws_s3_bucket.presto_hive_storage.arn}"
+        },
       {
          "Effect": "Allow",
          "Principal": {
@@ -112,11 +107,22 @@ resource "aws_s3_bucket_policy" "presto_hive_storage" {
             "s3:DeleteObject",
             "s3:DeleteObjectVersion"
          ],
-         "Resource": "${aws_s3_bucket.presto_hive_storage.arn}/*",
-         "Condition": {
-          "Bool":
+         "Resource": "${aws_s3_bucket.presto_hive_storage.arn}/*"
+        },
+      {
+        "Sid": "AllowSSLRequestsOnly",
+        "Action": "s3:*",
+        "Effect": "Deny",
+        "Resource": [
+          "${aws_s3_bucket.presto_hive_storage.arn}",
+          "${aws_s3_bucket.presto_hive_storage.arn}/*"
+        ],
+        "Condition": {
+          "Bool": {
             "aws:SecureTransport": "false"
-         }
+          }
+        },
+        "Principal": "*"
       }
    ]
 }
