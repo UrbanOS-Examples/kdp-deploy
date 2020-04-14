@@ -1,5 +1,5 @@
 provider "aws" {
-  version = "1.39"
+  version = "2.54"
   region  = "${var.os_region}"
 
   assume_role {
@@ -64,6 +64,15 @@ resource "aws_s3_bucket" "presto_hive_storage" {
   }
 }
 
+resource "aws_s3_bucket_public_access_block" "presto_hive_storage_s3_access" {
+  bucket = "${aws_s3_bucket.presto_hive_storage.id}"
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 resource "aws_s3_bucket_policy" "presto_hive_storage" {
   bucket = "${aws_s3_bucket.presto_hive_storage.id}"
 
@@ -83,7 +92,7 @@ resource "aws_s3_bucket_policy" "presto_hive_storage" {
             "s3:ListBucket"
          ],
          "Resource": "${aws_s3_bucket.presto_hive_storage.arn}"
-      },
+        },
       {
          "Effect": "Allow",
          "Principal": {
@@ -99,6 +108,21 @@ resource "aws_s3_bucket_policy" "presto_hive_storage" {
             "s3:DeleteObjectVersion"
          ],
          "Resource": "${aws_s3_bucket.presto_hive_storage.arn}/*"
+        },
+      {
+        "Sid": "AllowSSLRequestsOnly",
+        "Action": "s3:*",
+        "Effect": "Deny",
+        "Resource": [
+          "${aws_s3_bucket.presto_hive_storage.arn}",
+          "${aws_s3_bucket.presto_hive_storage.arn}/*"
+        ],
+        "Condition": {
+          "Bool": {
+            "aws:SecureTransport": "false"
+          }
+        },
+        "Principal": "*"
       }
    ]
 }
