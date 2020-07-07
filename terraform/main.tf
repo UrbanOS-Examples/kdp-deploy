@@ -47,86 +47,60 @@ data "aws_secretsmanager_secret_version" "metastore_database_password" {
   secret_id = "${module.metastore_database.password_secret_id}"
 }
 
-resource "aws_s3_bucket" "presto_hive_storage" {
-  bucket = "presto-hive-storage-${terraform.workspace}"
-  acl    = "private"
+module "presto_storage" {
+  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=1.0.0"
 
-  versioning {
-    enabled = false
+  name   = "presto-hive-storage-${terraform.workspace}"
+  region = "${var.os_region}"
+
+  policy = "${data.aws_iam_policy_document.eks_bucket_access.json}"
+
+  providers {
+    aws = "aws"
   }
+}
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
+data "aws_iam_policy_document" "eks_bucket_access" {
+  statement {
+    sid = "AllowListBucket"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["${data.terraform_remote_state.env_remote_state.eks_worker_role_arn}"]
     }
+
+    effect = "Allow"
+
+    actions = [
+      "s3:ListBucket",
+    ]
+
+    resources = [
+      "${module.presto_storage.bucket_arn}",
+    ]
   }
-}
 
-resource "aws_s3_bucket_public_access_block" "presto_hive_storage_s3_access" {
-  bucket = "${aws_s3_bucket.presto_hive_storage.id}"
+  statement {
+    sid = "AllowObjectWriteAccess"
 
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
+    principals {
+      type        = "AWS"
+      identifiers = ["${data.terraform_remote_state.env_remote_state.eks_worker_role_arn}"]
+    }
 
-resource "aws_s3_bucket_policy" "presto_hive_storage" {
-  bucket = "${aws_s3_bucket.presto_hive_storage.id}"
+    effect = "Allow"
 
-  policy = <<POLICY
-{
-   "Version": "2012-10-17",
-   "Statement": [
-        {
-         "Effect": "Allow",
-         "Principal": {
-           "AWS":
-            [
-              "${data.terraform_remote_state.env_remote_state.eks_worker_role_arn}"
-            ]
-         },
-         "Action": [
-            "s3:ListBucket"
-         ],
-         "Resource": "${aws_s3_bucket.presto_hive_storage.arn}"
-        },
-      {
-         "Effect": "Allow",
-         "Principal": {
-           "AWS":
-            [
-              "${data.terraform_remote_state.env_remote_state.eks_worker_role_arn}"
-            ]
-         },
-         "Action": [
-            "s3:GetObject",
-            "s3:PutObject",
-            "s3:DeleteObject",
-            "s3:DeleteObjectVersion"
-         ],
-         "Resource": "${aws_s3_bucket.presto_hive_storage.arn}/*"
-        },
-      {
-        "Sid": "AllowSSLRequestsOnly",
-        "Action": "s3:*",
-        "Effect": "Deny",
-        "Resource": [
-          "${aws_s3_bucket.presto_hive_storage.arn}",
-          "${aws_s3_bucket.presto_hive_storage.arn}/*"
-        ],
-        "Condition": {
-          "Bool": {
-            "aws:SecureTransport": "false"
-          }
-        },
-        "Principal": "*"
-      }
-   ]
-}
-POLICY
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+      "s3:DeleteObjectVersion",
+    ]
+
+    resources = [
+      "${module.presto_storage.bucket_arn}/*",
+    ]
+  }
 }
 
 resource "local_file" "helm_vars" {
@@ -147,7 +121,7 @@ global:
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
       kubernetes.io/ingress.class: alb
   objectStore:
-    bucketName: ${aws_s3_bucket.presto_hive_storage.bucket}
+    bucketName: ${module.presto_storage.bucket_name}
     accessKey: null
     accessSecret: null
 metastore:
@@ -210,9 +184,53 @@ EOF
   }
 }
 
+provider "aws" {
+  alias   = "backup"
+  version = "2.54"
+  region  = "${var.os_backup_region}"
+
+  assume_role {
+    role_arn = "${var.os_role_arn}"
+  }
+}
+
+module "presto_storage_backup" {
+  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=1.0.0"
+
+  name   = "presto-storage-backup-${terraform.workspace}"
+  region = "${var.os_backup_region}"
+
+  providers {
+    aws = "aws.backup"
+  }
+}
+
+data "aws_iam_policy_document" "presto_backup_executor" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    condition {
+      test     = "StringEquals"
+      variable = "${data.terraform_remote_state.env_remote_state.eks_cluster_oidc_provider_host}:sub"
+      values   = ["system:serviceaccount:kdp:presto-backup-executor"]
+    }
+
+    principals {
+      identifiers = ["${data.terraform_remote_state.env_remote_state.eks_cluster_oidc_provider_arn}"]
+      type        = "Federated"
+    }
+  }
+}
+
+resource "aws_iam_role" "presto_backup_executor" {
+  assume_role_policy = "${data.aws_iam_policy_document.presto_backup_executor.json}"
+  name               = "presto_backup_executor"
+}
+
 variable "chart_version" {
   description = "Version of the Helm chart used to deploy the app"
-  default     = "1.0.0"
+  default     = "1.3.0"
 }
 
 variable "is_internal" {
@@ -233,6 +251,11 @@ variable "alm_role_arn" {
 variable "os_region" {
   description = "Region of OS resources"
   default     = "us-west-2"
+}
+
+variable "os_backup_region" {
+  description = "Region for backup of select OS resources"
+  default     = "us-east-2"
 }
 
 variable "os_role_arn" {
