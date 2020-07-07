@@ -49,7 +49,7 @@ def deployTo(parameters = [:]) {
         sshagent(["GitHub"]) {
             terraform.init()
         }
-        terraform.plan(terraform.defaultVarFile, parameters, ["--var-file=${versionVarFile}"])
+        terraform.plan(terraform.defaultVarFile, parameters, [])
         terraform.apply()
     }
 }
