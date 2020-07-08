@@ -48,7 +48,7 @@ data "aws_secretsmanager_secret_version" "metastore_database_password" {
 }
 
 module "presto_storage" {
-  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=1.0.0"
+  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=1.1.0"
 
   name   = "presto-hive-storage-${terraform.workspace}"
   region = "${var.os_region}"
@@ -124,35 +124,42 @@ global:
     bucketName: ${module.presto_storage.bucket_name}
     accessKey: null
     accessSecret: null
-metastore:
-  deploy: ${var.image_tag != "" ? "{container: {tag: ${var.image_tag}}}" : "{}"}
-  allowDropTable: ${var.allow_drop_table ? "true": "false"}
-  timeout: 360m
-presto:
-  workers: 2
-  deploy: ${var.image_tag != "" ? "{container: {tag: ${var.image_tag}}}" : "{}"}
-  deployPrometheusExporter: true
-  useJmxExporter: true
-  ingress:
-    enable: true
-    hosts:
-    - "presto.${data.terraform_remote_state.env_remote_state.internal_dns_zone_name}/*"
-    annotations:
-      alb.ingress.kubernetes.io/healthcheck-path: /v1/cluster
-    serviceName: redirect
-    servicePort: use-annotation
-postgres:
-  enable: false
-  service:
-    externalAddress: ${module.metastore_database.address}
-  db:
-    name: ${module.metastore_database.name}
-    user: ${module.metastore_database.username}
-    password: ${data.aws_secretsmanager_secret_version.metastore_database_password.secret_string}
-hive:
-  enable: false
-minio:
-  enable: false
+kubernetes-data-platform:
+  metastore:
+    deploy: ${var.image_tag != "" ? "{container: {tag: ${var.image_tag}}}" : "{}"}
+    allowDropTable: ${var.allow_drop_table ? "true": "false"}
+    timeout: 360m
+  presto:
+    workers: 2
+    deploy: ${var.image_tag != "" ? "{container: {tag: ${var.image_tag}}}" : "{}"}
+    deployPrometheusExporter: true
+    useJmxExporter: true
+    ingress:
+      enable: true
+      hosts:
+      - "presto.${data.terraform_remote_state.env_remote_state.internal_dns_zone_name}/*"
+      annotations:
+        alb.ingress.kubernetes.io/healthcheck-path: /v1/cluster
+      serviceName: redirect
+      servicePort: use-annotation
+  postgres:
+    enable: false
+    service:
+      externalAddress: ${module.metastore_database.address}
+    db:
+      name: ${module.metastore_database.name}
+      user: ${module.metastore_database.username}
+      password: ${data.aws_secretsmanager_secret_version.metastore_database_password.secret_string}
+  hive:
+    enable: false
+  minio:
+    enable: false
+backup_executor:
+  sa_name: "${local.presto_backup_executor_role}"
+  role_arn: "${aws_iam_role.presto_backup_executor.arn}"
+  source_region: "${var.os_region}"
+  source_bucket: "${module.presto_storage.bucket_name}"
+  destination_bucket: "${module.presto_storage_backup.bucket_name}"
 EOF
 }
 
@@ -165,15 +172,17 @@ export KUBECONFIG=${local_file.kubeconfig.filename}
 
 export AWS_DEFAULT_REGION=us-east-2
 
+(
+cd ${path.module}/../chart
 helm init --client-only
-helm repo add scdp https://smartcitiesdata.github.io/charts
-helm repo update
-helm upgrade --install kdp scdp/kubernetes-data-platform \
-    --version ${var.chart_version} \
+helm dependency update
+helm upgrade --install kdp \
+    ./ \
     --namespace kdp \
     -f ${local_file.helm_vars.filename} \
-    -f ../helm_config/${var.environment}_values.yaml \
+    -f ./${var.environment}_values.yaml \
     ${var.extra_helm_args}
+)
 EOF
   }
 
@@ -195,17 +204,20 @@ provider "aws" {
 }
 
 module "presto_storage_backup" {
-  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=1.0.0"
+  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=1.1.0"
 
   name   = "presto-storage-backup-${terraform.workspace}"
   region = "${var.os_backup_region}"
+
+  lifecycle_enabled = true
+  lifecycle_days    = 30
 
   providers {
     aws = "aws.backup"
   }
 }
 
-data "aws_iam_policy_document" "presto_backup_executor" {
+data "aws_iam_policy_document" "presto_backup_executor_assume" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
     effect  = "Allow"
@@ -213,7 +225,7 @@ data "aws_iam_policy_document" "presto_backup_executor" {
     condition {
       test     = "StringEquals"
       variable = "${data.terraform_remote_state.env_remote_state.eks_cluster_oidc_provider_host}:sub"
-      values   = ["system:serviceaccount:kdp:presto-backup-executor"]
+      values   = ["system:serviceaccount:kdp:${local.presto_backup_executor_role}"]
     }
 
     principals {
@@ -223,9 +235,69 @@ data "aws_iam_policy_document" "presto_backup_executor" {
   }
 }
 
+data "aws_iam_policy_document" "presto_backup_executor_rights" {
+  statement {
+    sid = "AllowListBucket"
+
+    effect = "Allow"
+
+    actions = [
+      "s3:ListBucket",
+    ]
+
+    resources = [
+      "${module.presto_storage.bucket_arn}",
+      "${module.presto_storage_backup.bucket_arn}",
+    ]
+  }
+
+  statement {
+    sid = "AllowObjectReadAccessSource"
+
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject",
+      "s3:GetObjectTagging",
+    ]
+
+    resources = [
+      "${module.presto_storage.bucket_arn}/*",
+    ]
+  }
+
+  statement {
+    sid = "AllowObjectWriteAccessDestination"
+
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+      "s3:DeleteObjectVersion",
+    ]
+
+    resources = [
+      "${module.presto_storage_backup.bucket_arn}/*",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "presto_backup_executor_rights" {
+  name = "presto_backup_executor_rights"
+  role = "${aws_iam_role.presto_backup_executor.id}"
+
+  policy = "${data.aws_iam_policy_document.presto_backup_executor_rights.json}"
+}
+
 resource "aws_iam_role" "presto_backup_executor" {
-  assume_role_policy = "${data.aws_iam_policy_document.presto_backup_executor.json}"
+  assume_role_policy = "${data.aws_iam_policy_document.presto_backup_executor_assume.json}"
   name               = "presto_backup_executor"
+}
+
+locals {
+  presto_backup_executor_role = "presto-backup-executor"
 }
 
 variable "chart_version" {
