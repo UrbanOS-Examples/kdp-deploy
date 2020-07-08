@@ -122,8 +122,8 @@ global:
       kubernetes.io/ingress.class: alb
   objectStore:
     bucketName: ${module.presto_storage.bucket_name}
-    accessKey: null
-    accessSecret: null
+    accessKey: []
+    accessSecret: []
 kubernetes-data-platform:
   metastore:
     deploy: ${var.image_tag != "" ? "{container: {tag: ${var.image_tag}}}" : "{}"}
