@@ -44,7 +44,6 @@ node('infrastructure') {
 
 def deployTo(parameters = [:]) {
     dir('terraform') {
-        def versionVarFile = '../version.tfvars'
         def terraform = scos.terraform(parameters.environment)
         sshagent(["GitHub"]) {
             terraform.init()

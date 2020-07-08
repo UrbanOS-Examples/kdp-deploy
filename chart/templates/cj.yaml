@@ -1,0 +1,25 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: presto-backup
+spec:
+  schedule: "15 5 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          serviceAccountName: {{ .Values.backup_executor.sa_name }}
+          containers:
+          - name: backup
+            image: amazon/aws-cli:2.0.28
+            args:
+            - s3
+            - sync
+            - '--source-region={{ .Values.backup_executor.source_region }}'
+            - '--only-show-errors'
+            - s3://{{ .Values.backup_executor.source_bucket }}
+            - s3://{{ .Values.backup_executor.destination_bucket }}

@@ -13,3 +13,4 @@ outputs
 .terraform
 terraform.tfstate.d
 *.plan
+chart/charts
