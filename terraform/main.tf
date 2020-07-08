@@ -175,6 +175,8 @@ export AWS_DEFAULT_REGION=us-east-2
 (
 cd ${path.module}/../chart
 helm init --client-only
+helm repo add scdp https://smartcitiesdata.github.io/charts
+helm repo update
 helm dependency update
 helm upgrade --install kdp \
     ./ \
