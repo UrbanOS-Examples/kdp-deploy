@@ -1,6 +1,6 @@
 dependencies:
 - name: kubernetes-data-platform
   repository: https://smartcitiesdata.github.io/charts
-  version: 1.5.0
-digest: sha256:79ef72c1f3efaa3b35c091675c896e68921903bc5a9c88132ed69ef6d9479461
-generated: "2020-07-17T14:40:54.196946-04:00"
+  version: 1.5.1
+digest: sha256:62bc1dd2796d64f787cc8c982ad489ecdae81b90f4d5cd31cd19e69968711fc7
+generated: "2020-07-17T15:40:03.567995-04:00"
