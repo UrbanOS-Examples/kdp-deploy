@@ -1,4 +1,4 @@
 dependencies:
   - name: kubernetes-data-platform
-    version: 1.4.0
+    version: 1.5.1
     repository: https://smartcitiesdata.github.io/charts

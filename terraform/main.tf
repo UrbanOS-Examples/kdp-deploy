@@ -150,6 +150,10 @@ kubernetes-data-platform:
       name: ${module.metastore_database.name}
       user: ${module.metastore_database.username}
       password: ${data.aws_secretsmanager_secret_version.metastore_database_password.secret_string}
+    tls:
+      enable: true
+      mode: verify-full
+      rootCertPath: /etc/ssl/certs/ca-certificates.crt
   hive:
     enable: false
   minio:
