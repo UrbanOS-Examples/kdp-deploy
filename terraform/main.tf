@@ -32,10 +32,11 @@ resource "local_file" "kubeconfig" {
 }
 
 module "metastore_database" {
-  source = "git@github.com:SmartColumbusOS/scos-tf-rds?ref=1.0.1"
+  source = "git@github.com:SmartColumbusOS/scos-tf-rds?ref=1.4.0"
 
   prefix                   = "${var.environment}-metastore"
-  name                     = "metastore"
+  identifier               = "${var.environment}-hive-metastore"
+  database_name            = "metastore"
   type                     = "postgres"
   attached_vpc_id          = "${data.terraform_remote_state.env_remote_state.vpc_id}"
   attached_subnet_ids      = ["${data.terraform_remote_state.env_remote_state.private_subnets}"]
