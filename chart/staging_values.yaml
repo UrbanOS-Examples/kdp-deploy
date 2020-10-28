@@ -1,20 +1,20 @@
 kubernetes-data-platform:
   presto:
     query:
-      maxMemory: 5GB
-      maxMemoryPerNode: 2.5GB
-      maxTotalMemoryPerNode: 2.6GB
+      maxMemory: 10GB
+      maxMemoryPerNode: 5GB
+      maxTotalMemoryPerNode: 5.5GB
       heapHeadroomPerNode: 0.75GB
     jvm:
-      maxHeapSize: 5120M
+      maxHeapSize: 10240M
     deploy:
       container:
         resources:
           limits:
-            memory: 6Gi
+            memory: 12Gi
             cpu: 3
           requests:
-            memory: 6Gi
+            memory: 12Gi
             cpu: 3
     task:
-      writerCount: 1
+      writerCount: 4
