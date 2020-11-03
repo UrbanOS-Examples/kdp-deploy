@@ -131,7 +131,7 @@ kubernetes-data-platform:
     allowDropTable: ${var.allow_drop_table ? "true": "false"}
     timeout: 360m
   presto:
-    workers: 2
+    workers: 4
     deploy: ${var.image_tag != "" ? "{container: {tag: ${var.image_tag}}}" : "{}"}
     deployPrometheusExporter: true
     useJmxExporter: true
