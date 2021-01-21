@@ -1,5 +1,6 @@
 kubernetes-data-platform:
   presto:
+    workers: 8
     query:
       maxMemory: 10GB
       maxMemoryPerNode: 5GB
