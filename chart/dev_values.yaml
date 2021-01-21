@@ -1,5 +1,6 @@
 kubernetes-data-platform:
   presto:
+    workers: 2
     jvm:
       maxHeapSize: 1536M
     deploy:
