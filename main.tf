@@ -1,5 +1,5 @@
 provider "aws" {
-  version = "2.54"
+  version = "~> 3.0"
   region  = "${var.os_region}"
 
   assume_role {
@@ -49,7 +49,7 @@ data "aws_secretsmanager_secret_version" "metastore_database_password" {
 }
 
 module "presto_storage" {
-  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=1.1.0"
+  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=common-512"
 
   name   = "presto-hive-storage-${terraform.workspace}"
   region = "${var.os_region}"
@@ -202,7 +202,7 @@ EOF
 
 provider "aws" {
   alias   = "backup"
-  version = "2.54"
+  version = "~> 3.0"
   region  = "${var.os_backup_region}"
 
   assume_role {
@@ -211,7 +211,7 @@ provider "aws" {
 }
 
 module "presto_storage_backup" {
-  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=1.1.0"
+  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=common-512"
 
   name   = "presto-storage-backup-${terraform.workspace}"
   region = "${var.os_backup_region}"
