@@ -34,8 +34,8 @@ resource "local_file" "kubeconfig" {
 module "metastore_database" {
   source = "git@github.com:SmartColumbusOS/scos-tf-rds?ref=1.4.2"
 
-  prefix                   = "${var.environment}-metastore"
-  identifier               = "${var.environment}-hive-metastore"
+  prefix                   = "${terraform.workspace}-metastore"
+  identifier               = "${terraform.workspace}-hive-metastore"
   database_name            = "metastore"
   type                     = "postgres"
   attached_vpc_id          = "${data.terraform_remote_state.env_remote_state.vpc_id}"
@@ -178,7 +178,7 @@ export KUBECONFIG=${local_file.kubeconfig.filename}
 export AWS_DEFAULT_REGION=us-east-2
 
 (
-cd ${path.module}/../chart
+cd ${path.module}/chart
 helm init --client-only
 helm repo add scdp https://datastillery.github.io/charts
 helm repo update
