@@ -1,9 +1,9 @@
 provider "aws" {
   version = "~> 3.0"
-  region  = "${var.os_region}"
+  region  = var.os_region
 
   assume_role {
-    role_arn = "${var.os_role_arn}"
+    role_arn = var.os_role_arn
   }
 }
 
@@ -16,19 +16,19 @@ terraform {
 
 data "terraform_remote_state" "env_remote_state" {
   backend   = "s3"
-  workspace = "${terraform.workspace}"
+  workspace = terraform.workspace
 
-  config {
-    bucket   = "${var.state_bucket}"
+  config = {
+    bucket   = var.state_bucket
     key      = "operating-system"
-    region   = "${var.alm_region}"
-    role_arn = "${var.alm_role_arn}"
+    region   = var.alm_region
+    role_arn = var.alm_role_arn
   }
 }
 
 resource "local_file" "kubeconfig" {
   filename = "${path.module}/outputs/kubeconfig"
-  content  = "${data.terraform_remote_state.env_remote_state.eks_cluster_kubeconfig}"
+  content  = data.terraform_remote_state.env_remote_state.outputs.eks_cluster_kubeconfig
 }
 
 module "metastore_database" {
@@ -38,26 +38,26 @@ module "metastore_database" {
   identifier               = "${terraform.workspace}-hive-metastore"
   database_name            = "metastore"
   type                     = "postgres"
-  attached_vpc_id          = "${data.terraform_remote_state.env_remote_state.vpc_id}"
-  attached_subnet_ids      = ["${data.terraform_remote_state.env_remote_state.private_subnets}"]
-  attached_security_groups = ["${data.terraform_remote_state.env_remote_state.chatter_sg_id}"]
-  instance_class           = "${var.metastore_instance_class}"
+  attached_vpc_id          = data.terraform_remote_state.env_remote_state.outputs.vpc_id
+  attached_subnet_ids      = data.terraform_remote_state.env_remote_state.outputs.private_subnets
+  attached_security_groups = [data.terraform_remote_state.env_remote_state.outputs.chatter_sg_id]
+  instance_class           = var.metastore_instance_class
 }
 
 data "aws_secretsmanager_secret_version" "metastore_database_password" {
-  secret_id = "${module.metastore_database.password_secret_id}"
+  secret_id = module.metastore_database.password_secret_id
 }
 
 module "presto_storage" {
   source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=common-512"
 
   name   = "presto-hive-storage-${terraform.workspace}"
-  region = "${var.os_region}"
+  region = var.os_region
 
-  policy = "${data.aws_iam_policy_document.eks_bucket_access.json}"
+  policy = data.aws_iam_policy_document.eks_bucket_access.json
 
-  providers {
-    aws = "aws"
+  providers = {
+    aws = aws
   }
 }
 
@@ -66,8 +66,8 @@ data "aws_iam_policy_document" "eks_bucket_access" {
     sid = "AllowListBucket"
 
     principals {
-      type        = "AWS"
-      identifiers = ["${data.terraform_remote_state.env_remote_state.eks_worker_role_arn}"]
+      type = "AWS"
+      identifiers = [data.terraform_remote_state.env_remote_state.outputs.eks_worker_role_arn]
     }
 
     effect = "Allow"
@@ -77,7 +77,7 @@ data "aws_iam_policy_document" "eks_bucket_access" {
     ]
 
     resources = [
-      "${module.presto_storage.bucket_arn}",
+      module.presto_storage.bucket_arn,
     ]
   }
 
@@ -85,8 +85,8 @@ data "aws_iam_policy_document" "eks_bucket_access" {
     sid = "AllowObjectWriteAccess"
 
     principals {
-      type        = "AWS"
-      identifiers = ["${data.terraform_remote_state.env_remote_state.eks_worker_role_arn}"]
+      type = "AWS"
+      identifiers = [data.terraform_remote_state.env_remote_state.outputs.eks_worker_role_arn]
     }
 
     effect = "Allow"
@@ -114,9 +114,12 @@ global:
     annotations:
       alb.ingress.kubernetes.io/ssl-policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
       alb.ingress.kubernetes.io/scheme: "${var.is_internal ? "internal" : "internet-facing"}"
-      alb.ingress.kubernetes.io/subnets: "${join(",", data.terraform_remote_state.env_remote_state.public_subnets)}"
-      alb.ingress.kubernetes.io/security-groups: "${data.terraform_remote_state.env_remote_state.allow_private_security_group}"
-      alb.ingress.kubernetes.io/certificate-arn: "${data.terraform_remote_state.env_remote_state.tls_certificate_arn}"
+      alb.ingress.kubernetes.io/subnets: "${join(
+  ",",
+  data.terraform_remote_state.env_remote_state.outputs.public_subnets,
+)}"
+      alb.ingress.kubernetes.io/security-groups: "${data.terraform_remote_state.env_remote_state.outputs.allow_private_security_group}"
+      alb.ingress.kubernetes.io/certificate-arn: "${data.terraform_remote_state.env_remote_state.outputs.tls_certificate_arn}"
       alb.ingress.kubernetes.io/tags: scos.delete.on.teardown=true
       alb.ingress.kubernetes.io/actions.redirect: '{"Type": "redirect", "RedirectConfig":{"Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
@@ -128,7 +131,7 @@ global:
 kubernetes-data-platform:
   metastore:
     deploy: ${var.image_tag != "" ? "{container: {tag: ${var.image_tag}}}" : "{}"}
-    allowDropTable: ${var.allow_drop_table ? "true": "false"}
+    allowDropTable: ${var.allow_drop_table ? "true" : "false"}
     timeout: 360m
   presto:
     workers: 4
@@ -138,7 +141,7 @@ kubernetes-data-platform:
     ingress:
       enable: true
       hosts:
-      - "presto.${data.terraform_remote_state.env_remote_state.internal_dns_zone_name}/*"
+      - "presto.${data.terraform_remote_state.env_remote_state.outputs.internal_dns_zone_name}/*"
       annotations:
         alb.ingress.kubernetes.io/healthcheck-path: /v1/cluster
       serviceName: redirect
@@ -166,6 +169,7 @@ backup_executor:
   source_bucket: "${module.presto_storage.bucket_name}"
   destination_bucket: "${module.presto_storage_backup.bucket_name}"
 EOF
+
 }
 
 resource "null_resource" "helm_deploy" {
@@ -191,22 +195,23 @@ helm upgrade --install kdp \
     ${var.extra_helm_args}
 )
 EOF
+
   }
 
-  triggers {
+  triggers = {
     # Triggers a list of values that, when changed, will cause the resource to be recreated
     # ${uuid()} will always be different thus always executing above local-exec
-    hack_that_always_forces_null_resources_to_execute = "${uuid()}"
+    hack_that_always_forces_null_resources_to_execute = uuid()
   }
 }
 
 provider "aws" {
   alias   = "backup"
   version = "~> 3.0"
-  region  = "${var.os_backup_region}"
+  region  = var.os_backup_region
 
   assume_role {
-    role_arn = "${var.os_role_arn}"
+    role_arn = var.os_role_arn
   }
 }
 
@@ -214,13 +219,13 @@ module "presto_storage_backup" {
   source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=common-512"
 
   name   = "presto-storage-backup-${terraform.workspace}"
-  region = "${var.os_backup_region}"
+  region = var.os_backup_region
 
   lifecycle_enabled = true
   lifecycle_days    = 30
 
-  providers {
-    aws = "aws.backup"
+  providers = {
+    aws = aws.backup
   }
 }
 
@@ -231,12 +236,12 @@ data "aws_iam_policy_document" "presto_backup_executor_assume" {
 
     condition {
       test     = "StringEquals"
-      variable = "${data.terraform_remote_state.env_remote_state.eks_cluster_oidc_provider_host}:sub"
+      variable = "${data.terraform_remote_state.env_remote_state.outputs.eks_cluster_oidc_provider_host}:sub"
       values   = ["system:serviceaccount:kdp:${local.presto_backup_executor_role}"]
     }
 
     principals {
-      identifiers = ["${data.terraform_remote_state.env_remote_state.eks_cluster_oidc_provider_arn}"]
+      identifiers = [data.terraform_remote_state.env_remote_state.outputs.eks_cluster_oidc_provider_arn]
       type        = "Federated"
     }
   }
@@ -253,8 +258,8 @@ data "aws_iam_policy_document" "presto_backup_executor_rights" {
     ]
 
     resources = [
-      "${module.presto_storage.bucket_arn}",
-      "${module.presto_storage_backup.bucket_arn}",
+      module.presto_storage.bucket_arn,
+      module.presto_storage_backup.bucket_arn,
     ]
   }
 
@@ -293,13 +298,13 @@ data "aws_iam_policy_document" "presto_backup_executor_rights" {
 
 resource "aws_iam_role_policy" "presto_backup_executor_rights" {
   name = "presto_backup_executor_rights"
-  role = "${aws_iam_role.presto_backup_executor.id}"
+  role = aws_iam_role.presto_backup_executor.id
 
-  policy = "${data.aws_iam_policy_document.presto_backup_executor_rights.json}"
+  policy = data.aws_iam_policy_document.presto_backup_executor_rights.json
 }
 
 resource "aws_iam_role" "presto_backup_executor" {
-  assume_role_policy = "${data.aws_iam_policy_document.presto_backup_executor_assume.json}"
+  assume_role_policy = data.aws_iam_policy_document.presto_backup_executor_assume.json
   name               = "presto_backup_executor"
 }
 
@@ -369,3 +374,4 @@ variable "extra_helm_args" {
   description = "Helm options"
   default     = ""
 }
+
