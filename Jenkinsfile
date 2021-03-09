@@ -26,8 +26,7 @@ node('infrastructure') {
             deployTo(
                 environment: 'dev',
                 extraVars: [
-                    'image_tag': env.DEV_IMAGE_TAG),
-                    'environment': 'dev'
+                    'image_tag': env.DEV_IMAGE_TAG)
                 ])
         }
 
@@ -36,20 +35,12 @@ node('infrastructure') {
         }
 
         doStageIfMergedToMaster('Deploy to Staging') {
-            deployTo(
-                environment: 'staging'
-                extraVars: [
-                    'environment': 'staging'
-                ])
+            deployTo(environment: 'staging')
             scos.applyAndPushGitHubTag('staging')
         }
 
         doStageIfRelease('Deploy to Production') {
-            deployTo(
-                environment: 'prod',
-                extraVars: [
-                    'environment': 'prod'
-                ])
+            deployTo(environment: 'prod')
             scos.applyAndPushGitHubTag('prod')
         }
     }
