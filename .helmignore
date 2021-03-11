@@ -17,3 +17,4 @@
 .vscode/
 variables/
 shared/
+terraform.tfstate.d/

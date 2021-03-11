@@ -1,6 +1,7 @@
 # Terraform outputs
 .terraform/
 outputs/
+terraform.tfstate.d/
 
 # Helm outputs
 charts/
@@ -10,7 +11,6 @@ plans/
 **/*.zip
 **/*.plan
 **/*.out
-**/terraform.*
 
 # Filesystem and editor ignores
 *.swp
