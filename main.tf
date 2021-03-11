@@ -32,7 +32,7 @@ resource "local_file" "kubeconfig" {
 }
 
 module "metastore_database" {
-  source = "git@github.com:SmartColumbusOS/scos-tf-rds?ref=1.4.2"
+  source = "git@github.com:SmartColumbusOS/scos-tf-rds?ref=2.1.0"
 
   prefix                   = "${terraform.workspace}-metastore"
   identifier               = "${terraform.workspace}-hive-metastore"
@@ -52,7 +52,6 @@ module "presto_storage" {
   source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=common-512"
 
   name   = "presto-hive-storage-${terraform.workspace}"
-  region = var.os_region
 
   policy = data.aws_iam_policy_document.eks_bucket_access.json
 
@@ -182,7 +181,6 @@ export KUBECONFIG=${local_file.kubeconfig.filename}
 export AWS_DEFAULT_REGION=us-east-2
 
 (
-cd ${path.module}/chart
 helm init --client-only
 helm repo add scdp https://datastillery.github.io/charts
 helm repo update
@@ -219,7 +217,6 @@ module "presto_storage_backup" {
   source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=common-512"
 
   name   = "presto-storage-backup-${terraform.workspace}"
-  region = var.os_backup_region
 
   lifecycle_enabled = true
   lifecycle_days    = 30
