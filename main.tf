@@ -49,7 +49,7 @@ data "aws_secretsmanager_secret_version" "metastore_database_password" {
 }
 
 module "presto_storage" {
-  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=common-512"
+  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=2.0.0"
 
   name   = "presto-hive-storage-${terraform.workspace}"
 
@@ -214,7 +214,7 @@ provider "aws" {
 }
 
 module "presto_storage_backup" {
-  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=common-512"
+  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=2.0.0"
 
   name   = "presto-storage-backup-${terraform.workspace}"
 
