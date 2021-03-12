@@ -26,7 +26,7 @@ node('infrastructure') {
             deployTo(
                 environment: 'dev',
                 extraVars: [
-                    'image_tag': env.DEV_IMAGE_TAG)
+                    'image_tag': env.DEV_IMAGE_TAG
                 ])
         }
 
