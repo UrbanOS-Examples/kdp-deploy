@@ -1,5 +1,5 @@
 library(
-    identifier: 'pipeline-lib@4.6.1',
+    identifier: 'pipeline-lib@4.7.0',
     retriever: modernSCM([$class: 'GitSCMSource',
                           remote: 'https://github.com/SmartColumbusOS/pipeline-lib',
                           credentialsId: 'jenkins-github-user'])
@@ -23,7 +23,11 @@ node('infrastructure') {
         scos.doCheckoutStage()
 
         doStageIfDeployingToDev('Deploy to Dev') {
-            deployTo('environment': 'dev', 'image_tag': env.DEV_IMAGE_TAG)
+            deployTo(
+                environment: 'dev',
+                extraVars: [
+                    'image_tag': env.DEV_IMAGE_TAG
+                ])
         }
 
         doStageIfMergedToMaster('Process Dev job') {
@@ -31,24 +35,25 @@ node('infrastructure') {
         }
 
         doStageIfMergedToMaster('Deploy to Staging') {
-            deployTo('environment': 'staging')
+            deployTo(environment: 'staging')
             scos.applyAndPushGitHubTag('staging')
         }
 
         doStageIfRelease('Deploy to Production') {
-            deployTo('environment': 'prod')
+            deployTo(environment: 'prod')
             scos.applyAndPushGitHubTag('prod')
         }
     }
 }
 
 def deployTo(parameters = [:]) {
-    dir('terraform') {
-        def terraform = scos.terraform(parameters.environment)
-        sshagent(["GitHub"]) {
-            terraform.init()
-        }
-        terraform.plan(terraform.defaultVarFile, parameters, [])
-        terraform.apply()
+    def environment = params.get('environment')
+    def extraVars = params.get('extraVars', [:])
+
+    def terraform = scos.terraform(environment)
+    sshagent(["GitHub"]) {
+        terraform.init()
     }
+    terraform.plan(terraform.defaultVarFile, extraVars)
+    terraform.apply()
 }
