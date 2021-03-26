@@ -46,7 +46,7 @@ node('infrastructure') {
     }
 }
 
-def deployTo(parameters = [:]) {
+def deployTo(params = [:]) {
     def environment = params.get('environment')
     def extraVars = params.get('extraVars', [:])
 
