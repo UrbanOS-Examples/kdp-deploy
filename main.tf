@@ -38,6 +38,7 @@ module "metastore_database" {
   identifier               = "${terraform.workspace}-hive-metastore"
   database_name            = "metastore"
   type                     = "postgres"
+  vers                     = "10.15"
   attached_vpc_id          = data.terraform_remote_state.env_remote_state.outputs.vpc_id
   attached_subnet_ids      = data.terraform_remote_state.env_remote_state.outputs.private_subnets
   attached_security_groups = [data.terraform_remote_state.env_remote_state.outputs.chatter_sg_id]
