@@ -188,7 +188,7 @@ helm repo update
 helm dependency update
 helm upgrade --install kdp \
     ./ \
-    --version ${var.chartVersion} \
+    --version ${var.chart_version} \
     --namespace kdp \
     -f ${local_file.helm_vars.filename} \
     -f ./${var.environment}_values.yaml \
