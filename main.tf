@@ -188,6 +188,7 @@ helm repo update
 helm dependency update
 helm upgrade --install kdp \
     ./ \
+    --version ${var.chartVersion} \
     --namespace kdp \
     -f ${local_file.helm_vars.filename} \
     -f ./${var.environment}_values.yaml \
@@ -312,7 +313,7 @@ locals {
 
 variable "chart_version" {
   description = "Version of the Helm chart used to deploy the app"
-  default     = "1.3.0"
+  default     = "1.5.4"
 }
 
 variable "is_internal" {
