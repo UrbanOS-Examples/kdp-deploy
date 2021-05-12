@@ -2,5 +2,5 @@ dependencies:
 - name: kubernetes-data-platform
   repository: https://datastillery.github.io/charts
   version: 1.5.3
-digest: sha256:bf604a97bdab59158a8ef6604e03d2ef8ca2b6ba922500b50460ca320621cf51
-generated: "2020-09-21T14:01:36.592959-04:00"
+digest: sha256:fad16a26050f13c1289373d5a5378e479f1d70eb7e16d3c08c89f0dcacba0275
+generated: "2021-05-12T10:00:17.671373-04:00"
