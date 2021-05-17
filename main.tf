@@ -50,11 +50,15 @@ data "aws_secretsmanager_secret_version" "metastore_database_password" {
 }
 
 module "presto_storage" {
-  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=2.0.0"
+  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=2.0.1"
 
   name   = "presto-hive-storage-${terraform.workspace}"
 
   policy = data.aws_iam_policy_document.eks_bucket_access.json
+
+  lifecycle_enabled = true
+  lifecycle_days = 7
+  lifecycle_prefix = "user/root/.Trash/Current/hive-s3/"
 
   providers = {
     aws = aws
@@ -215,7 +219,7 @@ provider "aws" {
 }
 
 module "presto_storage_backup" {
-  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=2.0.0"
+  source = "git@github.com:SmartColumbusOS/scos-tf-bucket?ref=2.0.1"
 
   name   = "presto-storage-backup-${terraform.workspace}"
 
