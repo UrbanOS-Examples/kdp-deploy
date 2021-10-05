@@ -1,3 +1,4 @@
+{{- if .Values.backup_executor.enabled }}
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
@@ -23,3 +24,4 @@ spec:
             - '--only-show-errors'
             - s3://{{ .Values.backup_executor.source_bucket }}/hive-s3
             - s3://{{ .Values.backup_executor.destination_bucket }}/hive-s3
+{{- end }}
