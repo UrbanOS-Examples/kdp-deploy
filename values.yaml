@@ -1,0 +1,8 @@
+backup_executor:
+  # This is an expensive process and should only be used if S3 backups are insufficient for the use case
+  enabled: false
+  sa_name: ""
+  role_arn: ""
+  source_region: ""
+  source_bucket: ""
+  destination_bucket: ""

@@ -1,6 +1,8 @@
+{{- if .Values.backup_executor.enabled }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ .Values.backup_executor.sa_name }}
   annotations:
     eks.amazonaws.com/role-arn: {{ .Values.backup_executor.role_arn }}
+{{- end }}
