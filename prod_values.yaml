@@ -3,8 +3,8 @@ kubernetes-data-platform:
     workers: 4
     query:
       maxMemory: 80GB
-      maxMemoryPerNode: 45GB
-      maxTotalMemoryPerNode: 46GB
+      maxMemoryPerNode: 44GB
+      maxTotalMemoryPerNode: 45GB
       heapHeadroomPerNode: 1GB
     jvm:
       maxHeapSize: 48000M
